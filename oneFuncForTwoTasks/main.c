@@ -23,6 +23,14 @@ TaskHandle_t BlinkTwo_Handle = NULL;
 
 static u16 u16Count = 0;
 
+struct taskData_t {
+	u8 u8ID;
+	u8 * message;
+};
+
+struct taskData_t taskData_1 = {1, "Hello"};
+struct taskData_t taskData_2 = {2, "Kilo"};
+
 int main(void)
 {
 	/*System initialization*/
@@ -33,9 +41,10 @@ int main(void)
 
 	LCD_vidInit();
 
-	xTaskCreate(vidOneForTwo,"one",200,(void*)"Kilo", 3,&BlinkOne_Handle);
+	/*Creating two tasks with one function*/
+	xTaskCreate(vidOneForTwo,"one",200,(void*)&taskData_1, 1,&BlinkOne_Handle);
 
-	xTaskCreate(vidOneForTwo,"two",200,(void*)"Hello", 3,&BlinkTwo_Handle);
+	xTaskCreate(vidOneForTwo,"two",200,(void*)&taskData_2, 1,&BlinkTwo_Handle);
 	
 	vTaskStartScheduler();
 
@@ -44,11 +53,14 @@ int main(void)
 
 void vidOneForTwo(void * pt)
 {
-	u8 * pcName = (u8 *) pt;
-	
-	const TickType_t xFrequency = 2000;
+	struct taskData_t * taskData =  (struct taskData*) pt;
+	u8 * pcName = taskData->message; 
+	const TickType_t xFrequency = 5000;
 	TickType_t xLastWakeTime;
-	vTaskDelay(2000);
+	if (taskData->u8ID == 1)
+	{
+		vTaskDelay(2000);
+	}
 	while (1)
 	{
 		DIO_vidTogglePin(DIO_PORTD,DIO_PIN2);
@@ -60,31 +72,4 @@ void vidOneForTwo(void * pt)
 		vTaskDelayUntil(&xLastWakeTime,xFrequency);
 	}
 
-}
-
-void vidBlinkOne(void * pt)
-{
-	const TickType_t xFrequency = 1000;
-	TickType_t xLastWakeTime;
-	while (1)
-	{
-		DIO_vidTogglePin(DIO_PORTD,DIO_PIN2);
-		LCD_vidSendCommand(LCD_RETURN_HOME);
-		LCD_vidWriteNumber(u16Count);
-		u16Count++;
-		xLastWakeTime = xTaskGetTickCount();
-		vTaskDelayUntil(&xLastWakeTime,xFrequency);
-		LCD_vidSendCommand(LCD_CLEAR_SCREEN);
-	}
-}
-
-void vidBlinkTwo(void * pt)
-{
-	TickType_t xLastWakeTime;
-	while(1)
-	{
-		DIO_vidTogglePin(DIO_PORTD,DIO_PIN3);
-		xLastWakeTime = xTaskGetTickCount();
-		vTaskDelayUntil(&xLastWakeTime,500);
-	}
 }
